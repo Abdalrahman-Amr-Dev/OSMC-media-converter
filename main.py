@@ -1,8 +1,22 @@
+import os
+import sys
 import threading
 from pathlib import Path
 from PIL import Image
+import pillow_avif  # Critical for AVIF support
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
+import tkinter as tk
+
+# Helper function to find assets (icons) when compiled as .exe or .app
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 # Appearance Settings
 ctk.set_appearance_mode("System")
@@ -13,13 +27,25 @@ class OSMC(ctk.CTk):
         super().__init__()
 
         self.title("OSMC - Image Converter")
-        self.geometry("600x550")
+        self.geometry("600x580")
+
+        # --- Icon Logic ---
+        try:
+            if sys.platform.startswith("win"):
+                self.iconbitmap(resource_path("convert.ico"))
+            else:
+                # For macOS/Linux
+                img = tk.PhotoImage(file=resource_path("convert.png"))
+                self.iconphoto(False, img)
+        except Exception as e:
+            print(f"Icon loading skipped: {e}")
 
         # UI Elements
         self.label = ctk.CTkLabel(self, text="OSMC", font=("Helvetica", 28, "bold"))
         self.label.pack(pady=(20, 5))
         
-
+        self.sub_label = ctk.CTkLabel(self, text="Open Source Multi Converter", font=("Helvetica", 12))
+        self.sub_label.pack(pady=(0, 20))
 
         # Source Folder
         self.src_frame = ctk.CTkFrame(self)
@@ -51,9 +77,10 @@ class OSMC(ctk.CTk):
         self.format_option.pack(side="left", padx=10)
 
         # Quality Slider
-        self.quality_label = ctk.CTkLabel(self, text="Quality (10-100):")
-        self.quality_label.pack(pady=(10, 0))
-        self.quality_slider = ctk.CTkSlider(self, from_=10, to=100, number_of_steps=90)
+        self.quality_val_label = ctk.CTkLabel(self, text="Quality: 93")
+        self.quality_val_label.pack(pady=(10, 0))
+        
+        self.quality_slider = ctk.CTkSlider(self, from_=10, to=100, number_of_steps=90, command=self.update_quality_label)
         self.quality_slider.set(93)
         self.quality_slider.pack(pady=5)
 
@@ -69,6 +96,9 @@ class OSMC(ctk.CTk):
         # Log Output
         self.log = ctk.CTkTextbox(self, height=120)
         self.log.pack(fill="both", padx=20, pady=10)
+
+    def update_quality_label(self, value):
+        self.quality_val_label.configure(text=f"Quality: {int(value)}")
 
     def browse_src(self):
         folder = filedialog.askdirectory()
@@ -132,14 +162,12 @@ class OSMC(ctk.CTk):
                 output_file_path.parent.mkdir(parents=True, exist_ok=True)
 
                 with Image.open(file_path) as img:
-                    # Fix for JPEG/AVIF non-transparency support
+                    # JPEG/AVIF fix for transparency
                     if target_pil in ["JPEG", "AVIF"] and img.mode in ("RGBA", "P"):
                         img = img.convert("RGB")
                     
-                    # Prepare arguments
                     save_kwargs = {"format": target_pil}
                     
-                    # ONLY add exif if it actually exists to avoid 'NoneType' error
                     exif_data = img.info.get("exif")
                     if exif_data is not None:
                         save_kwargs["exif"] = exif_data
@@ -159,7 +187,7 @@ class OSMC(ctk.CTk):
             self.progress.set((i + 1) / total_files)
         
         self.convert_btn.configure(state="normal")
-        messagebox.showinfo("OSMC", f"Finished! All images converted to {selected_format}.")
+        messagebox.showinfo("OSMC", f"Finished! Images converted to {selected_format}.")
 
 if __name__ == "__main__":
     app = OSMC()
