@@ -1,0 +1,27 @@
+# PyInstaller outputs (The folders in your image)
+build/
+dist/
+
+# PyInstaller spec file 
+# (Keep this if you want to save your custom build settings, 
+# otherwise ignore it)
+# *.spec
+
+# Python internals
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE Settings
+.vscode/
+.idea/
+
+# OS specific files
+.DS_Store
+Thumbs.db
