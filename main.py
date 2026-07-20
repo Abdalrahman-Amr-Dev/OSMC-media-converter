@@ -1,8 +1,6 @@
-import os
 import threading
 from pathlib import Path
 from PIL import Image
-import pillow_avif
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 
